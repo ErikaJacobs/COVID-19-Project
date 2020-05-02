@@ -1,0 +1,32 @@
+.banner {
+    height: 75 px;
+    margin: 0px -10px 10px;
+    background-color: rgb(133, 122, 122);
+    border-radius: 2px;
+}
+
+.banner h2 {
+    padding-top: 10px;
+    margin-left: 2%;
+    display: inline-block;
+}
+
+.banner Img{
+    position: relative;
+    float: right;
+    right: 10px;
+    height: 75px;
+}
+
+.footer label{
+    margin: auto;
+    text-align: center;
+    font-size: 10px;
+}
+
+.footer A{
+    margin: auto;
+    text-align: center;
+    font-size: 10px;
+    display: block;
+}
