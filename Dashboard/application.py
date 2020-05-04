@@ -11,8 +11,8 @@ import plotly.graph_objs as go
 # Import Data #
 ###############
 
-aws_access_key_id = 'ACCESS_KEY'
-aws_secret_access_key = 'SECRET_KEY'
+aws_access_key_id = ACCESS_KEY
+aws_secret_access_key = SECRET_KEY
 s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id,
                     aws_secret_access_key=aws_secret_access_key)
 
@@ -67,37 +67,58 @@ for object in BucketList:
         continue
 
 DateList.sort()
+
+for date in DateList:
+    if date[0]=='0':
+        DateList[DateList.index(date)]=date[1:]
+    else:
+        continue
+
 today = DateList[-1]
-x = DateList[-7:]
 
+for date in DateList:
+    i = date[:(date.index('-2020'))]
+    DateList[DateList.index(date)] = i
+    DateList[DateList.index(i)] = (i).replace('-', '/')
 
-#%%
-# CREATING GRAPH #
-##################
-
-
-
-##
-y = [1, 2, 3, 4, 5, 6, 7]
-
-# Graph 2
-trace_close = go.Scatter(x=x,
-                         y=y,
-                         name='Close',
-                         line=dict(color="#f44242"))
-
-data = [trace_close]
-layout = dict(title="Coronavirus Chart 2", showlegend = False)
-fig2 = dict(data=data, layout=layout)
+print(DateList)
+x = DateList[-8:]
 
 #%%
 
 ##Create Country Dropdown
 
+CountryList = dfActive.Country_Region.unique().tolist()
+CountryList.sort()
+CountryDrop = []
+
+for i in CountryList:
+    CountryDrop.append({'label': '{}'.format(i), 'value': '{}'.format(i)})
+
+##Create US State Dropdown
+
+StateList = dfActive.Province_State[dfActive.Country_Region=="US"].unique().tolist()
+#StateList.remove(np.nan)
+StateList.remove('Recovered')
+StateList.remove('Diamond Princess')
+StateList.remove('Grand Princess')
+StateList.sort()
+StateDrop = []
+
+for i in StateList:
+    StateDrop.append({'label': '{}'.format(i), 'value': '{}'.format(i)})
+
+## Data Type Dropdown
+
+datatypes=[
+            {'label': 'Total', 'value': 'Confirmed'},
+            {'label': 'Active', 'value': 'Active'},
+            {'label': 'Recovered', 'value': 'Recovered'},
+            {'label': 'Deaths', 'value': 'Deaths'}
+        ]
 
 
-
-#%%
+##%%
 
 external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -121,26 +142,38 @@ app.layout = html.Div([
 
         html.Div([
             html.H3("Graph 2"),
-            dcc.Graph(id="Coronavirus Chart 2", figure=fig2)
+            dcc.Graph(id="Coronavirus Chart 2")
             ], className="six columns")
         
         ], className="row"),
 
     html.Div([
         html.Div([
+            html.Div([
+                dcc.Dropdown(
+                    id='demo-dropdown',
+                    options=CountryDrop,
+                    value='US'
+                    )], className='six columns'),
+                ], className='six columns'),
+
+        html.Div([
             dcc.Dropdown(
-                id='demo-dropdown',
-                options=[
-                    {'label': 'US', 'value': 'US'},
-                    {'label': 'Canada', 'value': 'Canada'},
-                    {'label': 'Italy', 'value': 'Italy'}
-                ],
-                value='US'
+                id='dropdown2',
+                options=StateDrop,
+                value='Arizona'
                 )], className='three columns'),
-            ], className='row'),
+        html.Div([
+            dcc.Dropdown(
+                id='dropdown3',
+                options=datatypes,
+                value='Active')
+                ], className='three columns'),
+             ], className='row'),
 
     html.Div([
         html.Div([
+            html.Label("Dashboard Created By Erika Jacobs"),
             html.Label("Last Updated On: {}".format(today)),
             html.Label("Data Source: Coronavirus COVID-19 "
                        "Global Cases by the Center for Systems Science and Engineering "
@@ -150,6 +183,7 @@ app.layout = html.Div([
                   ], className='footer')
             ], className='row')
 ])
+
 @app.callback(dash.dependencies.Output("Coronavirus Chart 1", "figure"),
               [dash.dependencies.Input('demo-dropdown', 'value')])
 
@@ -169,14 +203,55 @@ def update_fig(value):
         Deathsy.append(d)
         Recoveredy.append(r)
 
-    x = ['4/23', '4/24', '4/25', '4/26', '4/27', '4/28', '4/29', '4/30']
-
     Graph1 = go.Bar(x=x, y=Activey, name='Active Cases')
     Graph2 = go.Bar(x=x, y=Recoveredy, name='Recovered')
     Graph3 = go.Bar(x=x, y=Deathsy, name='Deaths')
 
     data = [Graph1, Graph2, Graph3]
     layout = dict(title="Coronavirus Chart 1", showlegend=False, barmode='stack')
+    fig = dict(data=data, layout=layout)
+    return fig
+
+@app.callback(
+    Output('Coronavirus Chart 2', 'figure'),
+    [Input('dropdown2', 'value'), Input('dropdown3', 'value')])
+
+def update_graph(value1, value2):
+    week = list(range(0, 8))
+    week.sort(reverse=True)
+    y = []
+    Newy = []
+
+## Build conditions for value2 (Active, Recovered, Etc.)
+    if value2 == 'Active':
+        for i in week:
+            a = dfActive['Active_{}'.format(i)][dfActive.Province_State == value1].sum()
+            n = dfActive['ActiveNew_{}'.format(i)][dfActive.Province_State == value1].sum()
+            y.append(a)
+            Newy.append(n)
+    if value2 == 'Confirmed':
+        for i in week:
+            a = dfConfirmed['Confirmed_{}'.format(i)][dfConfirmed.Province_State == value1].sum()
+            n = dfConfirmed['ConfirmedNew_{}'.format(i)][dfConfirmed.Province_State == value1].sum()
+            y.append(a)
+            Newy.append(n)
+    if value2 == 'Deaths':
+        for i in week:
+            a = dfDeaths['Deaths_{}'.format(i)][dfDeaths.Province_State == value1].sum()
+            n = dfDeaths['Deaths_{}'.format(i)][dfDeaths.Province_State == value1].sum()
+            y.append(a)
+            Newy.append(n)
+    if value2 == 'Recovered':
+        for i in week:
+            a = dfRecovered['Recovered_{}'.format(i)][dfRecovered.Province_State == value1].sum()
+            n = dfRecovered['Recovered_{}'.format(i)][dfRecovered.Province_State == value1].sum()
+            y.append(a)
+            Newy.append(n)
+
+    Graph4 = go.Scatter(x=x, y=Newy, fill='tozeroy', name='New ({})'.format(value2))
+    Graph5 = go.Scatter(x=x, y=y, fill='tonexty', name='Total ({})'.format(value2))
+    data = [Graph4, Graph5]
+    layout = dict(title="Coronavirus Chart 2", showlegend=True)
     fig = dict(data=data, layout=layout)
     return fig
 
