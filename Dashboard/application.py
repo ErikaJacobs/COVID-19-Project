@@ -2,10 +2,12 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Output, Input
+from dash.dependencies import Output, Input, State
 import pandas as pd
 import boto3
 import plotly.graph_objs as go
+import requests
+import plotly.express as px
 
 #%%
 # Import Data #
@@ -69,10 +71,14 @@ for object in BucketList:
 DateList.sort()
 
 for date in DateList:
+    i = DateList.index(date)
+
+    if date[3]=="0":
+        DateList[i]=date[:3] + date[(4):]
+
     if date[0]=='0':
-        DateList[DateList.index(date)]=date[1:]
-    else:
-        continue
+        DateList[i]=DateList[i][1:]
+
 
 today = DateList[-1]
 
@@ -81,7 +87,6 @@ for date in DateList:
     DateList[DateList.index(date)] = i
     DateList[DateList.index(i)] = (i).replace('-', '/')
 
-print(DateList)
 x = DateList[-8:]
 
 #%%
@@ -112,15 +117,27 @@ for i in StateList:
 
 datatypes=[
             {'label': 'Total', 'value': 'Confirmed'},
-            {'label': 'Active', 'value': 'Active'},
-            {'label': 'Recovered', 'value': 'Recovered'},
             {'label': 'Deaths', 'value': 'Deaths'}
         ]
+
+## Increase or Decrease Function - For Comments
+
+def incrdecr(now, then):
+    now = round(now, 1)
+    then = round(then, 1)
+    if now > then:
+        value = 'increased'
+    if now < then:
+        value = 'decreased'
+    if now == then:
+        value = 'stayed the same'
+    return value
 
 
 ##%%
 
-external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css',
+                      'https://codepen.io/subfauna/pen/CLtmF.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
@@ -134,15 +151,15 @@ app.layout = html.Div([
     html.Div([
 
         html.Div([
-            html.H3("Graph 1"),
-            dcc.Graph(id="Coronavirus Chart 1")
+            html.H3("By Country/Region", style={'text-align': 'center'}),
+            dcc.Graph(id="Coronavirus Chart 1", style={'text-align': 'center'})
             ], className="six columns"),
 
 
 
         html.Div([
-            html.H3("Graph 2"),
-            dcc.Graph(id="Coronavirus Chart 2")
+            html.H3("By State (US)", style={'text-align': 'center'}),
+            dcc.Graph(id="Coronavirus Chart 2", style={'text-align': 'center'})
             ], className="six columns")
         
         ], className="row"),
@@ -153,7 +170,8 @@ app.layout = html.Div([
                 dcc.Dropdown(
                     id='demo-dropdown',
                     options=CountryDrop,
-                    value='US'
+                    value='US',
+                    style = {"margin-left": "10px"}
                     )], className='six columns'),
                 ], className='six columns'),
 
@@ -161,16 +179,61 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='dropdown2',
                 options=StateDrop,
-                value='Arizona'
+                value='Arizona'}
                 )], className='three columns'),
         html.Div([
             dcc.Dropdown(
                 id='dropdown3',
                 options=datatypes,
-                value='Active')
-                ], className='three columns'),
+                value='Confirmed'
+                )], className='three columns'),
              ], className='row'),
-
+     html.Br(),
+     html.Div([
+        html.Div([
+            html.Button(id="button1", n_clicks=0, children="Submit",
+                        style={"margin-left": "20px",
+                               'color': 'white'}
+                        ),
+                ], className='six columns'),
+        html.Div([
+            html.Button(id="button2", n_clicks=0, children="Submit",
+                        style={'display': 'inline-block',
+                                'width': '48 %',
+                                'text-align': "center",
+                                'float': 'center',
+                                'margin': 'auto',
+                                'display': 'block',
+                                'float': 'center',
+                                'color': 'white'
+                                }
+                        ),
+                ], className ='six columns')
+         ], className='CenterButtons'),
+    html.Br(),
+    html.Br(),
+    html.Div([
+        html.Div(
+            [
+                html.Div([
+                    html.Table(id = "Insights Worldwide"
+                    )],
+                    style={"height": "300px", "overflowY": "scroll", "margin-left": "20px",
+                           'scrollbar-color': 'dark'}, className='six columns',
+                ),
+            ],
+            style={"height": "100%"}, ),
+        html.Div(
+            [
+                html.Div([
+                    html.Table(id="Insights State"
+                            )],
+                    style={"height": "300px", "overflowY": "scroll", "margin-left": "2%"}, className='six columns',
+                ),
+            ],
+            style={"height": "100%"}, ),
+            ], className='row'),
+    html.Br(),
     html.Div([
         html.Div([
             html.Label("Dashboard Created By Erika Jacobs"),
@@ -182,12 +245,13 @@ app.layout = html.Div([
             html.Label("Coronavirus Picture Courtesy of CDC PHIL")
                   ], className='footer')
             ], className='row')
-])
+], className='background')
 
 @app.callback(dash.dependencies.Output("Coronavirus Chart 1", "figure"),
-              [dash.dependencies.Input('demo-dropdown', 'value')])
+              [Input("button1", "n_clicks")],
+              [State('demo-dropdown', 'value')])
 
-def update_fig(value):
+def update_fig(n_clicks, value):
     week = list(range(0, 8))
     week.sort(reverse=True)
     Activey = []
@@ -208,27 +272,100 @@ def update_fig(value):
     Graph3 = go.Bar(x=x, y=Deathsy, name='Deaths')
 
     data = [Graph1, Graph2, Graph3]
-    layout = dict(title="Coronavirus Chart 1", showlegend=False, barmode='stack')
+    layout = dict(title="Weekly Breakdown of COVID-19 Cases: {}".format(value),
+                  font=dict(color='white'),
+                  showlegend=False,
+                  barmode='stack',
+                  paper_bgcolor = 'rgba(0,0,0,0)',
+				  plot_bgcolor = 'rgba(0,0,0,0)',
+                  colorway=['#9a3033', '#d66c47', '#e0c553'],
+                  textfont=dict(color="White"),
+                  colorscale='RdBu')
     fig = dict(data=data, layout=layout)
     return fig
 
+@app.callback(dash.dependencies.Output("Insights Worldwide", "children"),
+              [Input("button1", "n_clicks")],
+              [State('demo-dropdown', 'value')])
+
+def update_worldwide_notes(n_clicks, value):
+    TOTAL1 = "{0:,d}".format(dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum())
+    PERCENT1 = (dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()
+                - dfConfirmed.Confirmed_7[dfConfirmed.Country_Region == value].sum()) / dfConfirmed.Confirmed_7[
+                   dfConfirmed.Country_Region == value].sum() * 100
+    PERCENT2 = (dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()
+                - dfConfirmed.Confirmed_14[dfConfirmed.Country_Region == value].sum()) / dfConfirmed.Confirmed_14[
+                   dfConfirmed.Country_Region == value].sum() * 100
+    PERCENT3 = (dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()
+                - dfConfirmed.Confirmed_21[dfConfirmed.Country_Region == value].sum()) / dfConfirmed.Confirmed_21[
+                   dfConfirmed.Country_Region == value].sum() * 100
+    PERCENT4 = (dfRecovered.Recovered_0[dfRecovered.Country_Region == value].sum()) / (
+        dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()) * 100
+    PERCENT5 = (dfRecovered.Recovered_7[dfRecovered.Country_Region == value].sum()) / (
+        dfConfirmed.Confirmed_7[dfConfirmed.Country_Region == value].sum()) * 100
+    INCRDECR1 = incrdecr(PERCENT4, PERCENT5)
+    PERCENT6 = (dfDeaths.Deaths_0[dfDeaths.Country_Region == value].sum()) / (
+        dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()) * 100
+    PERCENT7 = (dfDeaths.Deaths_7[dfDeaths.Country_Region == value].sum()) / (
+        dfConfirmed.Confirmed_7[dfConfirmed.Country_Region == value].sum()) * 100
+    INCRDECR2 = incrdecr(PERCENT6, PERCENT7)
+    PERCENT8 = (dfActive.Active_0[dfActive.Country_Region == value].sum()) / (
+        dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()) * 100
+    PERCENT9 = (dfActive.Active_7[dfActive.Country_Region == value].sum()) / (
+        dfConfirmed.Confirmed_7[dfConfirmed.Country_Region == value].sum()) * 100
+    INCRDECR3 = incrdecr(PERCENT8, PERCENT9)
+
+    PERCENT1 = round(PERCENT1, 1)
+    PERCENT2 = round(PERCENT2, 1)
+    PERCENT3 = round(PERCENT3, 1)
+    PERCENT4 = round(PERCENT4, 1)
+    PERCENT5 = round(PERCENT5, 1)
+    PERCENT6 = round(PERCENT6, 1)
+    PERCENT7 = round(PERCENT7, 1)
+    PERCENT8 = round(PERCENT8, 1)
+    PERCENT9 = round(PERCENT9, 1)
+
+    df = pd.DataFrame(
+        {
+            "Insights - {}".format(value):
+                ["As of {}, there were a total of {} cases of COVID-19 in this location. "
+                 "This has increased by {}% since last week, {}% since two weeks ago, and "
+                 "{}% since three weeks ago.".format(x[-1], TOTAL1, PERCENT1, PERCENT2, PERCENT3),
+                 "{}% of cases have recovered as of {}. This has {} since last week, "
+                 "in which {}% of cases have recovered".format(PERCENT4, x[-1], INCRDECR1, PERCENT5),
+                 "{}% of cases have died as of {}. This has {} since last week, "
+                 "in which {}% of cases had died.".format(PERCENT6, x[-1], INCRDECR2, PERCENT7),
+                 "{}% of cases are active as of {}. This has {} since last week, "
+                 "in which {}% of cases were actively sick.".format(PERCENT8, x[-1], INCRDECR3, PERCENT9)],
+        }
+    )
+    children = ([html.Tr([html.Th("{} Insights (As of {})".format(value, today), style={"text-align": "center"})])]
+                    +
+                    [
+                        html.Tr(
+                            [
+                                html.Td(
+                                        df.iloc[i]["Insights - {}".format(value)]
+                                )
+                            ]
+                        )
+                        for i in range(min(len(df), 10))
+                    ])
+    return children
+
 @app.callback(
     Output('Coronavirus Chart 2', 'figure'),
-    [Input('dropdown2', 'value'), Input('dropdown3', 'value')])
+    [Input("button2", "n_clicks")],
+    state=[State('dropdown2', 'value'), State('dropdown3', 'value')])
 
-def update_graph(value1, value2):
+def update_graph(n_clicks, value1, value2):
     week = list(range(0, 8))
     week.sort(reverse=True)
     y = []
     Newy = []
 
 ## Build conditions for value2 (Active, Recovered, Etc.)
-    if value2 == 'Active':
-        for i in week:
-            a = dfActive['Active_{}'.format(i)][dfActive.Province_State == value1].sum()
-            n = dfActive['ActiveNew_{}'.format(i)][dfActive.Province_State == value1].sum()
-            y.append(a)
-            Newy.append(n)
+
     if value2 == 'Confirmed':
         for i in week:
             a = dfConfirmed['Confirmed_{}'.format(i)][dfConfirmed.Province_State == value1].sum()
@@ -238,22 +375,54 @@ def update_graph(value1, value2):
     if value2 == 'Deaths':
         for i in week:
             a = dfDeaths['Deaths_{}'.format(i)][dfDeaths.Province_State == value1].sum()
-            n = dfDeaths['Deaths_{}'.format(i)][dfDeaths.Province_State == value1].sum()
-            y.append(a)
-            Newy.append(n)
-    if value2 == 'Recovered':
-        for i in week:
-            a = dfRecovered['Recovered_{}'.format(i)][dfRecovered.Province_State == value1].sum()
-            n = dfRecovered['Recovered_{}'.format(i)][dfRecovered.Province_State == value1].sum()
+            n = dfDeaths['DeathsNew_{}'.format(i)][dfDeaths.Province_State == value1].sum()
             y.append(a)
             Newy.append(n)
 
     Graph4 = go.Scatter(x=x, y=Newy, fill='tozeroy', name='New ({})'.format(value2))
     Graph5 = go.Scatter(x=x, y=y, fill='tonexty', name='Total ({})'.format(value2))
     data = [Graph4, Graph5]
-    layout = dict(title="Coronavirus Chart 2", showlegend=True)
+    layout = dict(title="{} Cases: New vs Cumulative {} Cases".format(value1, value2),
+                  font=dict(color='white'),
+                  showlegend=False,
+                  paper_bgcolor = 'rgba(0,0,0,0)',
+				  plot_bgcolor = 'rgba(0,0,0,0)',
+                  colorway = ['#ff7947', '#b63735'])
     fig = dict(data=data, layout=layout)
     return fig
+
+@app.callback(
+    Output('Insights State', 'children'),
+    [Input("button2", "n_clicks")],
+    state=[State('dropdown2', 'value'), State('dropdown3', 'value')])
+
+def update_state_notes(n_clicks, value1, value2):
+    df = pd.DataFrame(
+        {
+            "Insights - {}".format(value1):
+                ["I pledge allegiance to the flag of the United States of America. And to the republic, "
+                 "for which it stands, one nation under god indivisible with liberty and justice for all.",
+                 "I read the news today oh boy - about a lucky man who made the grave. And though the news was "
+                 "rather sad, well I just had to laugh...I saw the photograph",
+                 "Zaphod",
+                 "Trillian"],
+        }
+    )
+    children = ([html.Tr([html.Th()])]
+                    +
+                    [
+                        html.Tr(
+                            [
+                                html.Td(
+                                        df.iloc[i]["Insights - {}".format(value1)]
+                                )
+                            ]
+                        )
+                        for i in range(min(len(df), 10))
+                    ])
+    return children
+
+
 
 if __name__ == "__main__":
     app.run_server(debug=True)
