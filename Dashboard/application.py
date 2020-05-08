@@ -6,8 +6,6 @@ from dash.dependencies import Output, Input, State
 import pandas as pd
 import boto3
 import plotly.graph_objs as go
-import requests
-import plotly.express as px
 
 #%%
 # Import Data #
@@ -136,14 +134,13 @@ def incrdecr(now, then):
 
 ##%%
 
-external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css',
-                      'https://codepen.io/subfauna/pen/CLtmF.css']
+external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div([
     
     html.Div([
-        html.H2("Coronavirus Dashboard"),
+        html.H2("Coronavirus Dashboard: A Deeper Dive"),
         html.Img(src="/assets/coronavirus.png")
         ], className="banner"),
     
@@ -179,7 +176,7 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='dropdown2',
                 options=StateDrop,
-                value='Arizona'}
+                value='Arizona'
                 )], className='three columns'),
         html.Div([
             dcc.Dropdown(
@@ -213,26 +210,29 @@ app.layout = html.Div([
     html.Br(),
     html.Br(),
     html.Div([
-        html.Div(
-            [
-                html.Div([
-                    html.Table(id = "Insights Worldwide"
-                    )],
-                    style={"height": "300px", "overflowY": "scroll", "margin-left": "20px",
-                           'scrollbar-color': 'dark'}, className='six columns',
-                ),
-            ],
-            style={"height": "100%"}, ),
-        html.Div(
-            [
-                html.Div([
-                    html.Table(id="Insights State"
-                            )],
-                    style={"height": "300px", "overflowY": "scroll", "margin-left": "2%"}, className='six columns',
-                ),
-            ],
-            style={"height": "100%"}, ),
-            ], className='row'),
+        html.Div([
+            html.Div(
+                [
+                    html.Div([
+                        html.Table(id = "Insights Worldwide"
+                        )],
+                        style={"height": "300px", "overflowY": "scroll", "margin-left": "20px"},
+                    ),
+                ], className='six columns',
+                style={"height": "100%"}, ),
+            html.Div(
+                [
+                    html.Div([
+                        html.Table(id="Insights State"
+                                )],
+                        style={"height": "300px", "overflowY": "scroll"},
+                    ),
+                ], className='six columns',
+                style={"height": "100%"}, ),
+                ], className='twelve columns'),
+        ], className='row'),
+    html.Br(),
+    html.Br(),
     html.Br(),
     html.Div([
         html.Div([
@@ -289,7 +289,7 @@ def update_fig(n_clicks, value):
               [State('demo-dropdown', 'value')])
 
 def update_worldwide_notes(n_clicks, value):
-    TOTAL1 = "{0:,d}".format(dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum())
+    TOTAL1 = "{0:,d}".format(int(dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()))
     PERCENT1 = (dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()
                 - dfConfirmed.Confirmed_7[dfConfirmed.Country_Region == value].sum()) / dfConfirmed.Confirmed_7[
                    dfConfirmed.Country_Region == value].sum() * 100
@@ -364,7 +364,7 @@ def update_graph(n_clicks, value1, value2):
     y = []
     Newy = []
 
-## Build conditions for value2 (Active, Recovered, Etc.)
+    ## Build conditions for value2 (Active, Recovered, Etc.)
 
     if value2 == 'Confirmed':
         for i in week:
@@ -397,24 +397,85 @@ def update_graph(n_clicks, value1, value2):
     state=[State('dropdown2', 'value'), State('dropdown3', 'value')])
 
 def update_state_notes(n_clicks, value1, value2):
+    def aboveorbelow(day, week):
+        if day > week:
+            value = 'above'
+        if day < week:
+            value = 'below'
+        if day == week:
+            value = 'approximately'
+        return value
+
+    if value2 == 'Confirmed':
+        value = 'confirmed cases'
+        TOTAL11 = ((dfConfirmed.Confirmed_0[dfConfirmed.Province_State == value1].sum()))
+        TOTAL1 = "{0:,d}".format(int(TOTAL11))
+        TOTAL22 = ((dfConfirmed.Confirmed_7[dfConfirmed.Province_State == value1].sum()))
+        TOTAL2 = "{0:,d}".format(int(TOTAL22))
+        TOTAL33 = ((dfConfirmed.ConfirmedNew_0[dfConfirmed.Province_State == value1].sum()))
+        TOTAL3 = "{0:,d}".format(int(TOTAL33))
+        TOTAL44 = ((dfConfirmed.ConfirmedNew_7[dfConfirmed.Province_State == value1].sum()))
+        TOTAL4 = "{0:,d}".format(int(TOTAL44))
+
+        PERCENT1 = round(TOTAL33 / TOTAL11 * 100, 1)
+        PERCENT2 = round(TOTAL44 / TOTAL22 * 100, 1)
+        PERCENT3 = round((TOTAL11 - TOTAL22) / TOTAL22 * 100, 1)
+        PERCENT4 = round((TOTAL33 - TOTAL44) / TOTAL44 * 100, 1)
+
+        INCRDECR1 = incrdecr(TOTAL11, TOTAL22)
+        INCRDECR2 = incrdecr(TOTAL33, TOTAL44)
+        INCRDECR3 = incrdecr(PERCENT1, PERCENT2)
+
+        AVERAGE = dfConfirmed.iloc[:, 13:20][dfConfirmed.Province_State == value1].sum().sum() / 7
+        AVG = "{0:,d}".format(int(AVERAGE))
+        DAYAVG = aboveorbelow(TOTAL33, AVERAGE)
+
+    if value2 == 'Deaths':
+        value = 'deaths'
+        TOTAL11 = ((dfDeaths.Deaths_0[dfDeaths.Province_State == value1].sum()))
+        TOTAL1 = "{0:,d}".format(int(TOTAL11))
+        TOTAL22 = ((dfDeaths.Deaths_7[dfDeaths.Province_State == value1].sum()))
+        TOTAL2 = "{0:,d}".format(int(TOTAL22))
+        TOTAL33 = ((dfDeaths.DeathsNew_0[dfDeaths.Province_State == value1].sum()))
+        TOTAL3 = "{0:,d}".format(int(TOTAL33))
+        TOTAL44 = ((dfDeaths.DeathsNew_7[dfDeaths.Province_State == value1].sum()))
+        TOTAL4 = "{0:,d}".format(int(TOTAL44))
+
+        PERCENT1 = round(TOTAL33 / TOTAL11 * 100, 1)
+        PERCENT2 = round(TOTAL44 / TOTAL22 * 100, 1)
+        PERCENT3 = round((TOTAL11 - TOTAL22) / TOTAL22 * 100, 1)
+        PERCENT4 = round((TOTAL33 - TOTAL44) / TOTAL44 * 100, 1)
+
+        INCRDECR1 = incrdecr(TOTAL11, TOTAL22)
+        INCRDECR2 = incrdecr(TOTAL33, TOTAL44)
+        INCRDECR3 = incrdecr(PERCENT1, PERCENT2)
+
+        AVERAGE = dfDeaths.iloc[:, 13:20][dfDeaths.Province_State == value1].sum().sum() / 7
+        AVG = "{0:,d}".format(int(AVERAGE))
+        DAYAVG = aboveorbelow(TOTAL33, AVERAGE)
+
     df = pd.DataFrame(
         {
-            "Insights - {}".format(value1):
-                ["I pledge allegiance to the flag of the United States of America. And to the republic, "
-                 "for which it stands, one nation under god indivisible with liberty and justice for all.",
-                 "I read the news today oh boy - about a lucky man who made the grave. And though the news was "
-                 "rather sad, well I just had to laugh...I saw the photograph",
-                 "Zaphod",
-                 "Trillian"],
+            "{} Insights - {}".format(value1, value2):
+                ["As of {}, there are {} total {} in this state. This has {} by {}% since last week, in which "
+                 "there were {} total {}.".format(x[-1], TOTAL1, value, INCRDECR1, PERCENT3, TOTAL2, value),
+                 "There were {} new {} on {} in this state. This has {} by {}% since last week, in which "
+                 "there were {} new {} on {}.".format(TOTAL3, value, x[-1], INCRDECR2, PERCENT4, TOTAL4, value, x[-8]),
+                 "On {}, {}% of {} in this state were new {}. This has {} since last week, in which "
+                 "{}% of {} on {} were new {}.".format(x[-1], PERCENT1, value, value, INCRDECR3, PERCENT2,
+                                                                     value, x[0], value),
+                 "There were an average of {} new {} in this state over the past week. In comparison, today is {} average "
+                 "for new {} in this state over the past week.".format(AVG, value, DAYAVG, value)]
         }
     )
-    children = ([html.Tr([html.Th()])]
+
+    children = ([html.Tr([html.Th("{} Insights - {} (As of {})".format(value1, value2, today), style={"text-align": "center"})])]
                     +
                     [
                         html.Tr(
                             [
                                 html.Td(
-                                        df.iloc[i]["Insights - {}".format(value1)]
+                                        df.iloc[i]["{} Insights - {}".format(value1, value2)]
                                 )
                             ]
                         )
