@@ -464,7 +464,7 @@ def update_state_notes(n_clicks, value1, value2):
                  "On {}, {}% of {} in this state were new {}. This has {} since last week, in which "
                  "{}% of {} on {} were new {}.".format(x[-1], PERCENT1, value, value, INCRDECR3, PERCENT2,
                                                                      value, x[0], value),
-                 "There were an average of {} new {} in this state over the past week. In comparison, today is {} average "
+                 "There were an average of {} new {} in this state per day over the past week. In comparison, today is {} average "
                  "for new {} in this state over the past week.".format(AVG, value, DAYAVG, value)]
         }
     )
