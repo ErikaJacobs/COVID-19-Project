@@ -6,7 +6,7 @@ With this newly created data source, a dashboard was created using the Dash libr
 ## Methods Used
 * ETL
 
-<img src="https://erikajacobs.netlify.app/post/covid-19-sparked-aws-ideas/featured.png" width="200">
+<img src="https://erikajacobs.netlify.app/post/covid-19-sparked-aws-ideas/featured.png" width="500">
 
 ## Technologies Used
 * Python
