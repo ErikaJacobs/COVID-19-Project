@@ -27,8 +27,8 @@ With this newly created data source, a dashboard was created using the Dash libr
 * [Blog Post - Dashboard Creation](https://erikajacobs.netlify.app/post/dash-of-coronavirus-data/)
 
 # Other Repository Contents
-* ```coronavirus.png```: Coronavirus Image (Courtesy of CDC PHIL)
-* ```stylesheet.css```: Dashboard Style Sheet
+* ```coronavirus.png``` - Coronavirus Image (Courtesy of CDC PHIL)
+* ```stylesheet.css``` - Dashboard Style Sheet
 
 # Sources
 * [COVID-19 Data Repository - Johns Hopkins University](https://github.com/CSSEGISandData/COVID-19?files=1)
