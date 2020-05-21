@@ -20,8 +20,8 @@ With this newly created data source, a dashboard was created using the Dash libr
 * Dash
 
 # Featured Notebooks, Scripts, Analysis, or Deliverables
-* [Python Script - DataBricks Notebook](https://github.com/ErikaJacobs/COVID-19-Project/blob/master/COVID-19%20Databricks%20Notebook.ipynb)
-* [Python Script - Dashboard](https://github.com/ErikaJacobs/COVID-19-Project/blob/master/Dashboard/application.py)
+* [```COVID-19 Databricks Notebook.ipynb```](https://github.com/ErikaJacobs/COVID-19-Project/blob/master/COVID-19%20Databricks%20Notebook.ipynb) - ETL Script
+* [```application.py```](https://github.com/ErikaJacobs/COVID-19-Project/blob/master/Dashboard/application.py) - Dashboard Script
 * [Coronavirus Dashboard (Deployed)](http://erikajacobs.pythonanywhere.com/)
 * [Blog Post - DataBricks, PySpark, AWS, and Data Prep](https://erikajacobs.netlify.app/post/covid-19-sparked-aws-ideas/)
 * [Blog Post - Dashboard Creation](https://erikajacobs.netlify.app/post/dash-of-coronavirus-data/)
