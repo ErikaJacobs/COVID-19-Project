@@ -38,7 +38,7 @@ if 'dfConfirmed' not in dir():
 
 # list items from bucket object
 
-s3 = boto3.resource('s3', aws_access_key_id=aws_access_key_id, aws_secret_access_key=aws_secret_access_key)
+s3 = boto3.resource('s3')
 bucket = s3.Bucket('erikatestbucket')
 BucketObjects = bucket.objects.filter(Prefix="COVID-19/DailyReports")
 
