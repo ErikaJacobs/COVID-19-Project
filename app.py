@@ -11,8 +11,8 @@ import plotly.graph_objs as go
 # Import Data #
 ###############
 
-aws_access_key_id = ACCESS_KEY
-aws_secret_access_key = SECRET_KEY
+aws_access_key_id = AWS_ACCESS_KEY_ID
+aws_secret_access_key = AWS_SECRET_ACCESS_KEY
 s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id,
                     aws_secret_access_key=aws_secret_access_key)
 
@@ -487,4 +487,4 @@ def update_state_notes(n_clicks, value1, value2):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server()
