@@ -30,3 +30,4 @@ With this newly created data source, a dashboard was created using the Dash libr
 
 # Sources
 * [COVID-19 Data Repository - Johns Hopkins University](https://github.com/CSSEGISandData/COVID-19?files=1)
+* [Heroku Hosting](https://austinlasseter.medium.com/how-to-deploy-a-simple-plotly-dash-app-to-heroku-622a2216eb73)
