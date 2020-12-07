@@ -11,10 +11,7 @@ import plotly.graph_objs as go
 # Import Data #
 ###############
 
-aws_access_key_id = AWS_ACCESS_KEY_ID
-aws_secret_access_key = AWS_SECRET_ACCESS_KEY
-s3 = boto3.client('s3', aws_access_key_id=aws_access_key_id,
-                    aws_secret_access_key=aws_secret_access_key)
+s3 = boto3.client('s3')
 
 def importdf(dftype):
     obj = s3.get_object(Bucket='erikatestbucket', Key='COVID-19/Output/{}.csv'.format(dftype))
@@ -488,3 +485,5 @@ def update_state_notes(n_clicks, value1, value2):
 
 if __name__ == "__main__":
     app.run_server()
+##
+
