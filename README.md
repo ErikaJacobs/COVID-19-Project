@@ -21,10 +21,8 @@ With this newly created data source, a dashboard was created using the Dash libr
 
 # Featured Notebooks, Scripts, Analysis, or Deliverables
 * [```COVID-19 Databricks Notebook.ipynb```](https://github.com/ErikaJacobs/COVID-19-Project/blob/master/COVID-19%20Databricks%20Notebook.ipynb) - ETL Script
-* [```application.py```](https://github.com/ErikaJacobs/COVID-19-Project/blob/master/Dashboard/application.py) - Dashboard Script
-* [Coronavirus Dashboard (Deployed)](http://erikajacobs.pythonanywhere.com/)
-* [Blog Post - DataBricks, PySpark, AWS, and Data Prep](https://erikajacobs.netlify.app/post/covid-19-sparked-aws-ideas/)
-* [Blog Post - Dashboard Creation](https://erikajacobs.netlify.app/post/dash-of-coronavirus-data/)
+* [```app.py```](https://github.com/ErikaJacobs/COVID-19-Project/blob/master/Dashboard/application.py) - Dashboard Script
+* [Coronavirus Dashboard (Deployed)](https://covid-19-jacobs.herokuapp.com/)
 
 # Other Repository Contents
 * ```coronavirus.png``` - Coronavirus Image (Courtesy of CDC PHIL)
@@ -32,3 +30,4 @@ With this newly created data source, a dashboard was created using the Dash libr
 
 # Sources
 * [COVID-19 Data Repository - Johns Hopkins University](https://github.com/CSSEGISandData/COVID-19?files=1)
+* [Heroku Hosting](https://austinlasseter.medium.com/how-to-deploy-a-simple-plotly-dash-app-to-heroku-622a2216eb73)
