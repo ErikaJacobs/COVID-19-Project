@@ -8,8 +8,7 @@ import boto3
 import plotly.graph_objs as go
 
 #%%
-# Import Data #
-###############
+# Import Data
 
 s3 = boto3.client('s3')
 
@@ -33,8 +32,7 @@ if 'dfConfirmed' not in dir():
     
 
 #%%
-# Configure Dates #
-##################
+# Configure Dates
 
 # list items from bucket object
 
@@ -48,9 +46,8 @@ for object in BucketObjects:
     BucketList.append(str(object))
 
 #%%
-##
-
 # Getting Dates for X axis, and to say when file was last updated.
+    
 DateList = []
 
 for object in BucketList:
@@ -86,7 +83,7 @@ x = DateList[-8:]
 
 #%%
 
-##Create Country Dropdown
+# Create Country Dropdown
 
 CountryList = dfActive.Country_Region.unique().tolist()
 CountryList.sort()
@@ -95,10 +92,9 @@ CountryDrop = []
 for i in CountryList:
     CountryDrop.append({'label': '{}'.format(i), 'value': '{}'.format(i)})
 
-##Create US State Dropdown
+# Create US State Dropdown
 
 StateList = dfActive.Province_State[dfActive.Country_Region=="US"].unique().tolist()
-#StateList.remove(np.nan)
 StateList.remove('Recovered')
 StateList.remove('Diamond Princess')
 StateList.remove('Grand Princess')
@@ -108,14 +104,14 @@ StateDrop = []
 for i in StateList:
     StateDrop.append({'label': '{}'.format(i), 'value': '{}'.format(i)})
 
-## Data Type Dropdown
+# Data Type Dropdown
 
 datatypes=[
             {'label': 'Total', 'value': 'Confirmed'},
             {'label': 'Deaths', 'value': 'Deaths'}
         ]
 
-## Increase or Decrease Function - For Comments
+# Increase or Decrease Function - For Comments
 
 def incrdecr(now, then):
     now = round(now, 1)
@@ -129,7 +125,7 @@ def incrdecr(now, then):
     return value
 
 
-##%%
+#%%
 
 external_stylesheets=['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -481,9 +477,8 @@ def update_state_notes(n_clicks, value1, value2):
                     ])
     return children
 
-
-
 if __name__ == "__main__":
     app.run_server()
-##
+
+#%%
 
