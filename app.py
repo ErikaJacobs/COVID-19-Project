@@ -454,7 +454,7 @@ def update_state_notes(n_clicks, value1, value2):
         AVERAGE = ydict_stats[f'{value2}'][-7:]
         AVG = "{0:,d}".format(int(AVERAGE))
 
-    df = pd.DataFrame(
+    dfstats = pd.DataFrame(
         {
             f"{value1} Insights - {value2}":
                 [f"As of {x[-1]}, there are {TOTAL1} total {value} in this state. This has {INCRDECR1} by {PERCENT3}% since last week, in which "
@@ -469,11 +469,11 @@ def update_state_notes(n_clicks, value1, value2):
                         html.Tr(
                             [
                                 html.Td(
-                                        df.iloc[i][f"{value1} Insights - {value2}"]
+                                        dfstats.iloc[i][f"{value1} Insights - {value2}"]
                                 )
                             ]
                         )
-                        for i in range(min(len(df), 10))
+                        for i in range(min(len(dfstats), 10))
                     ])
     return children
 
