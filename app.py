@@ -3,106 +3,107 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Output, Input, State
-import pandas as pd
-import boto3
 import plotly.graph_objs as go
+import pandas as pd
+from datetime import datetime, timedelta
+from pandasql import sqldf
 
-#%%
-# Import Data
+# Testing if today's file is available
+now = (datetime.now())
 
-s3 = boto3.client('s3')
-
-def importdf(dftype):
-    obj = s3.get_object(Bucket='erikatestbucket', Key='COVID-19/Output/{}.csv'.format(dftype))
-    df = pd.read_csv(obj['Body'])
-    return df
-
-if 'dfActive' not in dir():
-    dfActive = importdf('Active')
-    print('Active Table Imported')
-if 'dfDeaths' not in dir():
-    dfDeaths = importdf('Deaths')
-    print('Deaths Table Imported')
-if 'dfRecovered' not in dir():
-    dfRecovered = importdf('Recovered')
-    print('Recovered Table Imported')
-if 'dfConfirmed' not in dir():
-    dfConfirmed = importdf('Confirmed')
-    print('Confirmed Table Imported')
+try:
+    pd.read_csv(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{now.strftime("%m-%d-%Y")}.csv')
+except:
+    now = (now - timedelta(days = 1))
     
+# Make List of Time Frames
+timedeltas = (0, 1, 2, 3, 4, 5, 6, 7, 14, 21)
+timeframes = []
+
+for num in timedeltas:
+    timeframe = (now - timedelta(days = num)).strftime("%m-%d-%Y")
+    timeframes.append(timeframe)
+
+# Loop to import files from Johns Hopkins CSSEGIS GitHub
+dfdict = {}
+for time in range(len(timeframes)):
+    df = pd.read_csv(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{timeframes[time]}.csv')
+    df['Delta'] = timedeltas[time]
+    dfdict[f'df_{timedeltas[time]}'] = df
 
 #%%
-# Configure Dates
 
-# list items from bucket object
+# SQL Code for Aggregating Tables
+pysqldf = lambda q: sqldf(q, globals())
 
-s3 = boto3.resource('s3')
-bucket = s3.Bucket('erikatestbucket')
-BucketObjects = bucket.objects.filter(Prefix="COVID-19/DailyReports")
+for time in timedeltas:
+    df = dfdict[f'df_{time}']
 
-# Adding Bucket Item to list to get dates
-BucketList = []
-for object in BucketObjects:
-    BucketList.append(str(object))
+    dfdict[f'df_{time}'] = pysqldf(
+    '''SELECT Province_State, Country_Region, Delta,
+    SUM(Confirmed) as Confirmed, 
+    SUM(Deaths) as Deaths, 
+    SUM(Recovered) as Recovered, 
+    SUM(Active) as Active
+    FROM df
+    GROUP BY Delta, Country_Region, Province_State''')
+
+# Union Tables Together and Delete Dictionary
+df = dfdict['df_0']
+del dfdict['df_0']
+
+for time in timedeltas[1:]:
+    df = df.append(dfdict[f'df_{time}'])
+    del dfdict[f'df_{time}']
+    
+# Sort Final Table
 
 #%%
+
+# Determine How Many Days in Chart
+chart_days = 8
+
+# X VALUES
 # Getting Dates for X axis, and to say when file was last updated.
+today = timeframes[0]
+
+for time in range(len(timeframes)):
+    date = timeframes[time]
+    date = date[:-5]
+
+    if date[3] == "0":
+        date = date[:3] + date[4:]
+
+    if date[0] == '0':
+        date = date[1:]
     
-DateList = []
+    date = date.replace('-', '/')
+    
+    timeframes[time] = date
 
-for object in BucketList:
-    if '.csv' and 'DailyReports' in object:
-        string = (object)
-        filenameind = string.index('DailyReports/')
-        csvind = string.index('.csv')
-        filename = string[filenameind+13:csvind]
-        DateList.append(filename)
-    else:
-        continue
-
-DateList.sort()
-
-for date in DateList:
-    i = DateList.index(date)
-
-    if date[3]=="0":
-        DateList[i]=date[:3] + date[(4):]
-
-    if date[0]=='0':
-        DateList[i]=DateList[i][1:]
-
-
-today = DateList[-1]
-
-for date in DateList:
-    i = date[:(date.index('-2020'))]
-    DateList[DateList.index(date)] = i
-    DateList[DateList.index(i)] = (i).replace('-', '/')
-
-x = DateList[-8:]
+x = timeframes[:chart_days]
+x = x[::-1]
 
 #%%
 
 # Create Country Dropdown
 
-CountryList = dfActive.Country_Region.unique().tolist()
+CountryList = df.Country_Region.unique().tolist()
 CountryList.sort()
 CountryDrop = []
 
-for i in CountryList:
-    CountryDrop.append({'label': '{}'.format(i), 'value': '{}'.format(i)})
+for country in CountryList:
+    CountryDrop.append({'label': f'{country}', 'value': f'{country}'})
 
 # Create US State Dropdown
 
-StateList = dfActive.Province_State[dfActive.Country_Region=="US"].unique().tolist()
-StateList.remove('Recovered')
-StateList.remove('Diamond Princess')
-StateList.remove('Grand Princess')
+StateList = df.Province_State[df.Country_Region=="US"].unique().tolist()
+StateList = [i for i in StateList if i not in ['Recovered', 'Diamond Princess', 'Grand Princess']]
 StateList.sort()
 StateDrop = []
 
-for i in StateList:
-    StateDrop.append({'label': '{}'.format(i), 'value': '{}'.format(i)})
+for state in StateList:
+    StateDrop.append({'label': f'{state}', 'value': f'{state}'})
 
 # Data Type Dropdown
 
@@ -124,6 +125,84 @@ def incrdecr(now, then):
         value = 'stayed the same'
     return value
 
+#%%
+# Y VALUES
+
+# Get Dictionary of y values - Country Portion
+
+def get_ydict_country_stats(n_clicks, value):
+    ydict_stats = {}
+    
+    y = ['Active', 'Deaths', 'Recovered', 'Confirmed']
+    
+    for axis in y:
+    
+        temp = pysqldf(
+            f'''SELECT Delta, SUM({axis}) as col
+            FROM df
+            WHERE Country_Region = '{value}'
+            GROUP BY Delta
+            ORDER BY Delta desc''')
+        
+        ydict_stats[f'{axis}'] = dict(zip(temp.Delta, temp.col))
+        
+    return ydict_stats
+
+def get_ydict_country_plot(n_clicks, value):
+    ydict_plot = {}
+    
+    y = ['Active', 'Deaths', 'Recovered', 'Confirmed']
+    
+    for axis in y:
+    
+        temp = pysqldf(
+            f'''SELECT SUM({axis}) as col
+            FROM df
+            WHERE Country_Region = '{value}'
+            GROUP BY Delta
+            ORDER BY Delta desc''')
+        
+        ydict_plot[f'{axis}'] = temp['col'].to_list()
+        ydict_plot[f'{axis}'] = ydict_plot[f'{axis}'][-chart_days:]
+        
+    return ydict_plot
+    
+def get_ydict_state_stats(n_clicks, value1):
+    ydict_stats = {}
+    
+    y = ['Active', 'Deaths', 'Recovered', 'Confirmed']
+    
+    for axis in y:
+    
+        temp = pysqldf(
+            f'''SELECT Delta, SUM({axis}) as col
+            FROM df
+            WHERE Province_State = '{value1}'
+            GROUP BY Delta
+            ORDER BY Delta desc''')
+        
+        ydict_stats[f'{axis}'] = dict(zip(temp.Delta, temp.col))
+        
+    return ydict_stats
+
+def get_ydict_state_plot(n_clicks, value1):
+    ydict_plot = {}
+    
+    y = ['Active', 'Deaths', 'Recovered', 'Confirmed']
+    
+    for axis in y:
+    
+        temp = pysqldf(
+            f'''SELECT SUM({axis}) as col
+            FROM df
+            WHERE Province_State = '{value1}'
+            GROUP BY Delta
+            ORDER BY Delta desc''')
+        
+        ydict_plot[f'{axis}'] = temp['col'].to_list()
+        ydict_plot[f'{axis}'] = ydict_plot[f'{axis}'][-chart_days:]
+        
+    return ydict_plot
 
 #%%
 
@@ -231,7 +310,7 @@ app.layout = html.Div([
     html.Div([
         html.Div([
             html.Label("Dashboard Created By Erika Jacobs"),
-            html.Label("Last Updated On: {}".format(today)),
+            html.Label(f"Last Updated On: {today}"),
             html.Label("Data Source: Coronavirus COVID-19 "
                        "Global Cases by the Center for Systems Science and Engineering "
                        "at Johns Hopkins University"),
@@ -246,36 +325,24 @@ app.layout = html.Div([
               [State('demo-dropdown', 'value')])
 
 def update_fig(n_clicks, value):
-    week = list(range(0, 8))
-    week.sort(reverse=True)
-    Activey = []
-    Deathsy = []
-    Recoveredy = []
 
-    for i in week:
-        a = dfActive['Active_{}'.format(i)][dfActive.Country_Region == value].sum()
-        d = dfDeaths['Deaths_{}'.format(i)][dfDeaths.Country_Region == value].sum()
-        r = dfRecovered['Recovered_{}'.format(i)][dfRecovered.Country_Region == value].sum()
+    ydict_plot = get_ydict_country_plot(n_clicks, value)
 
-        Activey.append(a)
-        Deathsy.append(d)
-        Recoveredy.append(r)
-
-    Graph1 = go.Bar(x=x, y=Activey, name='Active Cases')
-    Graph2 = go.Bar(x=x, y=Recoveredy, name='Recovered')
-    Graph3 = go.Bar(x=x, y=Deathsy, name='Deaths')
+    Graph1 = go.Bar(x=x, y=ydict_plot['Active'], name='Active Cases')
+    Graph2 = go.Bar(x=x, y=ydict_plot['Recovered'], name='Recovered')
+    Graph3 = go.Bar(x=x, y=ydict_plot['Deaths'], name='Deaths')
 
     data = [Graph1, Graph2, Graph3]
-    layout = dict(title="Weekly Breakdown of COVID-19 Cases: {}".format(value),
-                  font=dict(color='white'),
-                  showlegend=False,
-                  barmode='stack',
+    layout = dict(title = f"Weekly Breakdown of COVID-19 Cases: {value}",
+                  font = dict(color='white'),
+                  showlegend = False,
+                  barmode = 'stack',
                   paper_bgcolor = 'rgba(0,0,0,0)',
 				  plot_bgcolor = 'rgba(0,0,0,0)',
-                  colorway=['#9a3033', '#d66c47', '#e0c553'],
-                  textfont=dict(color="White"),
-                  colorscale='RdBu')
-    fig = dict(data=data, layout=layout)
+                  colorway = ['#9a3033', '#d66c47', '#e0c553'],
+                  textfont = dict(color="White"),
+                  colorscale = 'RdBu')
+    fig = dict(data = data, layout = layout)
     return fig
 
 @app.callback(dash.dependencies.Output("Insights Worldwide", "children"),
@@ -283,67 +350,52 @@ def update_fig(n_clicks, value):
               [State('demo-dropdown', 'value')])
 
 def update_worldwide_notes(n_clicks, value):
-    TOTAL1 = "{0:,d}".format(int(dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()))
-    PERCENT1 = (dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()
-                - dfConfirmed.Confirmed_7[dfConfirmed.Country_Region == value].sum()) / dfConfirmed.Confirmed_7[
-                   dfConfirmed.Country_Region == value].sum() * 100
-    PERCENT2 = (dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()
-                - dfConfirmed.Confirmed_14[dfConfirmed.Country_Region == value].sum()) / dfConfirmed.Confirmed_14[
-                   dfConfirmed.Country_Region == value].sum() * 100
-    PERCENT3 = (dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()
-                - dfConfirmed.Confirmed_21[dfConfirmed.Country_Region == value].sum()) / dfConfirmed.Confirmed_21[
-                   dfConfirmed.Country_Region == value].sum() * 100
-    PERCENT4 = (dfRecovered.Recovered_0[dfRecovered.Country_Region == value].sum()) / (
-        dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()) * 100
-    PERCENT5 = (dfRecovered.Recovered_7[dfRecovered.Country_Region == value].sum()) / (
-        dfConfirmed.Confirmed_7[dfConfirmed.Country_Region == value].sum()) * 100
+    
+    ydict_stats = get_ydict_country_stats(n_clicks, value)
+    
+    TOTAL1 = "{0:,d}".format(int(ydict_stats['Confirmed'][0]))
+    PERCENT1 = (ydict_stats['Confirmed'][0] - ydict_stats['Confirmed'][7]) / ydict_stats['Confirmed'][7] * 100
+    PERCENT2 = (ydict_stats['Confirmed'][0] - ydict_stats['Confirmed'][14]) / ydict_stats['Confirmed'][14] * 100
+    PERCENT3 = (ydict_stats['Confirmed'][0] - ydict_stats['Confirmed'][21]) / ydict_stats['Confirmed'][21] * 100
+    PERCENT4 = ydict_stats['Recovered'][0] / ydict_stats['Confirmed'][0] * 100
+    PERCENT5 = ydict_stats['Recovered'][7] / ydict_stats['Confirmed'][7] * 100
     INCRDECR1 = incrdecr(PERCENT4, PERCENT5)
-    PERCENT6 = (dfDeaths.Deaths_0[dfDeaths.Country_Region == value].sum()) / (
-        dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()) * 100
-    PERCENT7 = (dfDeaths.Deaths_7[dfDeaths.Country_Region == value].sum()) / (
-        dfConfirmed.Confirmed_7[dfConfirmed.Country_Region == value].sum()) * 100
+    PERCENT6 = ydict_stats['Deaths'][0] / ydict_stats['Confirmed'][0] * 100
+    PERCENT7 = ydict_stats['Deaths'][7] / ydict_stats['Confirmed'][7] * 100
     INCRDECR2 = incrdecr(PERCENT6, PERCENT7)
-    PERCENT8 = (dfActive.Active_0[dfActive.Country_Region == value].sum()) / (
-        dfConfirmed.Confirmed_0[dfConfirmed.Country_Region == value].sum()) * 100
-    PERCENT9 = (dfActive.Active_7[dfActive.Country_Region == value].sum()) / (
-        dfConfirmed.Confirmed_7[dfConfirmed.Country_Region == value].sum()) * 100
+    PERCENT8 = ydict_stats['Active'][0] / ydict_stats['Confirmed'][0] * 100
+    PERCENT9 = ydict_stats['Active'][7] / ydict_stats['Confirmed'][7] * 100
     INCRDECR3 = incrdecr(PERCENT8, PERCENT9)
+    
+    pc = [PERCENT1, PERCENT2, PERCENT3, PERCENT4, PERCENT5, PERCENT6,
+              PERCENT7, PERCENT8, PERCENT9]
+    
+    for percent in range(len(pc)):
+        pc[percent] = round(pc[percent], 1)
 
-    PERCENT1 = round(PERCENT1, 1)
-    PERCENT2 = round(PERCENT2, 1)
-    PERCENT3 = round(PERCENT3, 1)
-    PERCENT4 = round(PERCENT4, 1)
-    PERCENT5 = round(PERCENT5, 1)
-    PERCENT6 = round(PERCENT6, 1)
-    PERCENT7 = round(PERCENT7, 1)
-    PERCENT8 = round(PERCENT8, 1)
-    PERCENT9 = round(PERCENT9, 1)
-
-    df = pd.DataFrame(
+    dfstats = pd.DataFrame(
         {
-            "Insights - {}".format(value):
-                ["As of {}, there were a total of {} cases of COVID-19 in this location. "
-                 "This has increased by {}% since last week, {}% since two weeks ago, and "
-                 "{}% since three weeks ago.".format(x[-1], TOTAL1, PERCENT1, PERCENT2, PERCENT3),
-                 "{}% of cases have recovered as of {}. This has {} since last week, "
-                 "in which {}% of cases have recovered".format(PERCENT4, x[-1], INCRDECR1, PERCENT5),
-                 "{}% of cases have died as of {}. This has {} since last week, "
-                 "in which {}% of cases had died.".format(PERCENT6, x[-1], INCRDECR2, PERCENT7),
-                 "{}% of cases are active as of {}. This has {} since last week, "
-                 "in which {}% of cases were actively sick.".format(PERCENT8, x[-1], INCRDECR3, PERCENT9)],
+            f"Insights - {value}":
+                [f"As of {x[-1]}, there were a total of {TOTAL1} cases of COVID-19 in this location. "
+                 "This has increased by {pc[0]}% since last week, {pc[1]}% since two weeks ago, and "
+                 "{pc[2]}% since three weeks ago.",
+                 f"{pc[5]}% of cases have died as of {x[-1]}. This has {INCRDECR2} since last week, "
+                 "in which {pc[6]}% of cases had died.",
+                 f"{pc[7]}% of cases are active as of {x[-1]}. This has {INCRDECR3} since last week, "
+                 "in which {pc[8]}% of cases were actively sick."],
         }
     )
-    children = ([html.Tr([html.Th("{} Insights (As of {})".format(value, today), style={"text-align": "center"})])]
+    children = ([html.Tr([html.Th(f"{value} Insights (As of {today})", style={"text-align": "center"})])]
                     +
                     [
                         html.Tr(
                             [
                                 html.Td(
-                                        df.iloc[i]["Insights - {}".format(value)]
+                                        dfstats.iloc[i][f"Insights - {value}"]
                                 )
                             ]
                         )
-                        for i in range(min(len(df), 10))
+                        for i in range(min(len(dfstats), 10))
                     ])
     return children
 
@@ -353,36 +405,19 @@ def update_worldwide_notes(n_clicks, value):
     state=[State('dropdown2', 'value'), State('dropdown3', 'value')])
 
 def update_graph(n_clicks, value1, value2):
-    week = list(range(0, 8))
-    week.sort(reverse=True)
-    y = []
-    Newy = []
-
+    
+    ydict_plot = get_ydict_state_plot(n_clicks, value1, value2)
+    
     ## Build conditions for value2 (Active, Recovered, Etc.)
-
-    if value2 == 'Confirmed':
-        for i in week:
-            a = dfConfirmed['Confirmed_{}'.format(i)][dfConfirmed.Province_State == value1].sum()
-            n = dfConfirmed['ConfirmedNew_{}'.format(i)][dfConfirmed.Province_State == value1].sum()
-            y.append(a)
-            Newy.append(n)
-    if value2 == 'Deaths':
-        for i in week:
-            a = dfDeaths['Deaths_{}'.format(i)][dfDeaths.Province_State == value1].sum()
-            n = dfDeaths['DeathsNew_{}'.format(i)][dfDeaths.Province_State == value1].sum()
-            y.append(a)
-            Newy.append(n)
-
-    Graph4 = go.Scatter(x=x, y=Newy, fill='tozeroy', name='New ({})'.format(value2))
-    Graph5 = go.Scatter(x=x, y=y, fill='tonexty', name='Total ({})'.format(value2))
-    data = [Graph4, Graph5]
-    layout = dict(title="{} Cases: New vs Cumulative {} Cases".format(value1, value2),
-                  font=dict(color='white'),
-                  showlegend=False,
+    Graph4 = go.Scatter(x=x, y=ydict_plot[f'{value2}'], fill = 'tozeroy', name = 'New ({value2})')
+    data = [Graph4]
+    layout = dict(title = f"{value1} Cases: New vs Cumulative {value2} Cases",
+                  font = dict(color='white'),
+                  showlegend = False,
                   paper_bgcolor = 'rgba(0,0,0,0)',
 				  plot_bgcolor = 'rgba(0,0,0,0)',
-                  colorway = ['#ff7947', '#b63735'])
-    fig = dict(data=data, layout=layout)
+                  colorway = ['#b63735'])
+    fig = dict(data = data, layout = layout)
     return fig
 
 @app.callback(
@@ -391,6 +426,9 @@ def update_graph(n_clicks, value1, value2):
     state=[State('dropdown2', 'value'), State('dropdown3', 'value')])
 
 def update_state_notes(n_clicks, value1, value2):
+    
+    ydict_stats = get_ydict_state_stats(n_clicks, value1)
+    
     def aboveorbelow(day, week):
         if day > week:
             value = 'above'
@@ -402,64 +440,26 @@ def update_state_notes(n_clicks, value1, value2):
 
     if value2 == 'Confirmed':
         value = 'confirmed cases'
-        TOTAL11 = ((dfConfirmed.Confirmed_0[dfConfirmed.Province_State == value1].sum()))
-        TOTAL1 = "{0:,d}".format(int(TOTAL11))
-        TOTAL22 = ((dfConfirmed.Confirmed_7[dfConfirmed.Province_State == value1].sum()))
-        TOTAL2 = "{0:,d}".format(int(TOTAL22))
-        TOTAL33 = ((dfConfirmed.ConfirmedNew_0[dfConfirmed.Province_State == value1].sum()))
-        TOTAL3 = "{0:,d}".format(int(TOTAL33))
-        TOTAL44 = ((dfConfirmed.ConfirmedNew_7[dfConfirmed.Province_State == value1].sum()))
-        TOTAL4 = "{0:,d}".format(int(TOTAL44))
-
-        PERCENT1 = round(TOTAL33 / TOTAL11 * 100, 1)
-        PERCENT2 = round(TOTAL44 / TOTAL22 * 100, 1)
-        PERCENT3 = round((TOTAL11 - TOTAL22) / TOTAL22 * 100, 1)
-        PERCENT4 = round((TOTAL33 - TOTAL44) / TOTAL44 * 100, 1)
-
-        INCRDECR1 = incrdecr(TOTAL11, TOTAL22)
-        INCRDECR2 = incrdecr(TOTAL33, TOTAL44)
-        INCRDECR3 = incrdecr(PERCENT1, PERCENT2)
-
-        AVERAGE = dfConfirmed.iloc[:, 13:20][dfConfirmed.Province_State == value1].sum().sum() / 7
-        AVG = "{0:,d}".format(int(AVERAGE))
-        DAYAVG = aboveorbelow(TOTAL33, AVERAGE)
-
-    if value2 == 'Deaths':
+    else:
         value = 'deaths'
-        TOTAL11 = ((dfDeaths.Deaths_0[dfDeaths.Province_State == value1].sum()))
-        TOTAL1 = "{0:,d}".format(int(TOTAL11))
-        TOTAL22 = ((dfDeaths.Deaths_7[dfDeaths.Province_State == value1].sum()))
-        TOTAL2 = "{0:,d}".format(int(TOTAL22))
-        TOTAL33 = ((dfDeaths.DeathsNew_0[dfDeaths.Province_State == value1].sum()))
-        TOTAL3 = "{0:,d}".format(int(TOTAL33))
-        TOTAL44 = ((dfDeaths.DeathsNew_7[dfDeaths.Province_State == value1].sum()))
-        TOTAL4 = "{0:,d}".format(int(TOTAL44))
+        
+        TOTAL11 = int(ydict_stats[f'{value2}'][0])
+        TOTAL22 = int(ydict_stats[f'{value2}'][7])
+        TOTAL1 = "{0:,d}".format(TOTAL11)
+        TOTAL2 = "{0:,d}".format(TOTAL22)
 
-        PERCENT1 = round(TOTAL33 / TOTAL11 * 100, 1)
-        PERCENT2 = round(TOTAL44 / TOTAL22 * 100, 1)
         PERCENT3 = round((TOTAL11 - TOTAL22) / TOTAL22 * 100, 1)
-        PERCENT4 = round((TOTAL33 - TOTAL44) / TOTAL44 * 100, 1)
-
         INCRDECR1 = incrdecr(TOTAL11, TOTAL22)
-        INCRDECR2 = incrdecr(TOTAL33, TOTAL44)
-        INCRDECR3 = incrdecr(PERCENT1, PERCENT2)
 
-        AVERAGE = dfDeaths.iloc[:, 13:20][dfDeaths.Province_State == value1].sum().sum() / 7
+        AVERAGE = ydict_stats[f'{value2}'][-7:]
         AVG = "{0:,d}".format(int(AVERAGE))
-        DAYAVG = aboveorbelow(TOTAL33, AVERAGE)
 
     df = pd.DataFrame(
         {
-            "{} Insights - {}".format(value1, value2):
-                ["As of {}, there are {} total {} in this state. This has {} by {}% since last week, in which "
-                 "there were {} total {}.".format(x[-1], TOTAL1, value, INCRDECR1, PERCENT3, TOTAL2, value),
-                 "There were {} new {} on {} in this state. This has {} by {}% since last week, in which "
-                 "there were {} new {} on {}.".format(TOTAL3, value, x[-1], INCRDECR2, PERCENT4, TOTAL4, value, x[-8]),
-                 "On {}, {}% of {} in this state were new {}. This has {} since last week, in which "
-                 "{}% of {} on {} were new {}.".format(x[-1], PERCENT1, value, value, INCRDECR3, PERCENT2,
-                                                                     value, x[0], value),
-                 "There were an average of {} new {} in this state per day over the past week. In comparison, today is {} average "
-                 "for new {} in this state over the past week.".format(AVG, value, DAYAVG, value)]
+            f"{value1} Insights - {value2}":
+                [f"As of {x[-1]}, there are {TOTAL1} total {value} in this state. This has {INCRDECR1} by {PERCENT3}% since last week, in which "
+                 "there were {TOTAL2} total {value}.",
+                 f"The average number of {value} in this state over the past week was approximately {AVG} {value}."]
         }
     )
 
@@ -481,4 +481,3 @@ if __name__ == "__main__":
     app.run_server()
 
 #%%
-
