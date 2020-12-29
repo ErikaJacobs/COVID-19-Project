@@ -463,13 +463,13 @@ def update_state_notes(n_clicks, value1, value2):
         }
     )
 
-    children = ([html.Tr([html.Th("{} Insights - {} (As of {})".format(value1, value2, today), style={"text-align": "center"})])]
+    children = ([html.Tr([html.Th(f"{value1} Insights - {value2} (As of {today})", style={"text-align": "center"})])]
                     +
                     [
                         html.Tr(
                             [
                                 html.Td(
-                                        df.iloc[i]["{} Insights - {}".format(value1, value2)]
+                                        df.iloc[i][f"{value1} Insights - {value2}"]
                                 )
                             ]
                         )
