@@ -377,12 +377,12 @@ def update_worldwide_notes(n_clicks, value):
         {
             f"Insights - {value}":
                 [f"As of {x[-1]}, there were a total of {TOTAL1} cases of COVID-19 in this location. "
-                 "This has increased by {pc[0]}% since last week, {pc[1]}% since two weeks ago, and "
-                 "{pc[2]}% since three weeks ago.",
+                 f"This has increased by {pc[0]}% since last week, {pc[1]}% since two weeks ago, and "
+                 f"{pc[2]}% since three weeks ago.",
                  f"{pc[5]}% of cases have died as of {x[-1]}. This has {INCRDECR2} since last week, "
-                 "in which {pc[6]}% of cases had died.",
+                 f"in which {pc[6]}% of cases had died.",
                  f"{pc[7]}% of cases are active as of {x[-1]}. This has {INCRDECR3} since last week, "
-                 "in which {pc[8]}% of cases were actively sick."],
+                 f"in which {pc[8]}% of cases were actively sick."],
         }
     )
     children = ([html.Tr([html.Th(f"{value} Insights (As of {today})", style={"text-align": "center"})])]
