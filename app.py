@@ -167,7 +167,7 @@ def get_ydict_country_plot(n_clicks, value):
         
     return ydict_plot
     
-def get_ydict_state_stats(n_clicks, value1):
+def get_ydict_state_stats(n_clicks, value1, value2):
     ydict_stats = {}
     
     y = ['Active', 'Deaths', 'Recovered', 'Confirmed']
@@ -185,7 +185,7 @@ def get_ydict_state_stats(n_clicks, value1):
         
     return ydict_stats
 
-def get_ydict_state_plot(n_clicks, value1):
+def get_ydict_state_plot(n_clicks, value1, value2):
     ydict_plot = {}
     
     y = ['Active', 'Deaths', 'Recovered', 'Confirmed']
@@ -418,6 +418,7 @@ def update_graph(n_clicks, value1, value2):
 				  plot_bgcolor = 'rgba(0,0,0,0)',
                   colorway = ['#b63735'])
     fig = dict(data = data, layout = layout)
+    
     return fig
 
 @app.callback(
