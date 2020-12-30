@@ -478,7 +478,7 @@ def update_state_notes(n_clicks, value1, value2):
             f"{value1} Insights - {value2}":
                 [f"As of {x[-1]}, there are {TOTAL1} total {value} in this state. This has {INCRDECR1} by {PERCENT3}% since last week, in which "
                  f"there were {TOTAL2} total {value}.",
-                 f"The average number of {value} in this state over the past week was approximately {AVG} {value}."]
+                 f"The average number of {value} in this state over the past week was approximately {AVG} {value} per day."]
         }
     )
 
