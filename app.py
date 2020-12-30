@@ -10,8 +10,15 @@ from pandasql import sqldf
 import requests
 from io import StringIO
 
-# Setting "Now" To Yesterday
-now = (datetime.now() - timedelta(days = 1))
+# Testing if today's file is available
+now = (datetime.now())
+
+try:
+    url = f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{now.strftime("%m-%d-%Y")}.csv'
+    r = requests.get(url) 
+    data = pd.read_csv(StringIO(r.text))
+except:
+    now = (now - timedelta(days = 1))
     
 # Make List of Time Frames
 timedeltas = (0, 1, 2, 3, 4, 5, 6, 7, 14, 21)
