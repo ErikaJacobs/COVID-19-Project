@@ -447,16 +447,16 @@ def update_state_notes(n_clicks, value1, value2):
     else:
         value = 'deaths'
         
-        TOTAL11 = int(ydict_stats[f'{value2}'][0])
-        TOTAL22 = int(ydict_stats[f'{value2}'][7])
-        TOTAL1 = "{0:,d}".format(TOTAL11)
-        TOTAL2 = "{0:,d}".format(TOTAL22)
+    TOTAL11 = int(ydict_stats[f'{value2}'][0])
+    TOTAL22 = int(ydict_stats[f'{value2}'][7])
+    TOTAL1 = "{0:,d}".format(TOTAL11)
+    TOTAL2 = "{0:,d}".format(TOTAL22)
 
-        PERCENT3 = round((TOTAL11 - TOTAL22) / TOTAL22 * 100, 1)
-        INCRDECR1 = incrdecr(TOTAL11, TOTAL22)
+    PERCENT3 = round((TOTAL11 - TOTAL22) / TOTAL22 * 100, 1)
+    INCRDECR1 = incrdecr(TOTAL11, TOTAL22)
 
-        AVERAGE = ydict_stats[f'{value2}'][-7:]
-        AVG = "{0:,d}".format(int(AVERAGE))
+    AVERAGE = ydict_stats[f'{value2}'][-7:]
+    AVG = "{0:,d}".format(int(AVERAGE))
 
     dfstats = pd.DataFrame(
         {
