@@ -7,6 +7,7 @@ import plotly.graph_objs as go
 import pandas as pd
 from datetime import datetime, timedelta
 from pandasql import sqldf
+import csv
 
 # Testing if today's file is available
 now = (datetime.now())
@@ -27,9 +28,13 @@ for num in timedeltas:
 # Loop to import files from Johns Hopkins CSSEGIS GitHub
 dfdict = {}
 for time in range(len(timeframes)):
-    df = pd.read_csv(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{timeframes[time]}.csv')
+    data = csv.DictReader(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{timeframes[time]}.csv')
+    df = pd.DataFrame.from_dict(data)
     df['Delta'] = timedeltas[time]
     dfdict[f'df_{timedeltas[time]}'] = df
+
+del data
+del df
 
 #%%
 
@@ -81,6 +86,8 @@ for time in range(len(timeframes)):
     
     timeframes[time] = date
 
+del date
+
 x = timeframes[:chart_days]
 x = x[::-1]
 
@@ -95,6 +102,8 @@ CountryDrop = []
 for country in CountryList:
     CountryDrop.append({'label': f'{country}', 'value': f'{country}'})
 
+del CountryList
+
 # Create US State Dropdown
 
 StateList = df.Province_State[df.Country_Region=="US"].unique().tolist()
@@ -104,6 +113,8 @@ StateDrop = []
 
 for state in StateList:
     StateDrop.append({'label': f'{state}', 'value': f'{state}'})
+    
+del StateList
 
 # Data Type Dropdown
 
