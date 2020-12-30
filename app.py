@@ -7,6 +7,8 @@ import plotly.graph_objs as go
 import pandas as pd
 from datetime import datetime, timedelta
 from pandasql import sqldf
+import requests
+from io import StringIO
 
 # Setting "Now" To Yesterday
 now = (datetime.now() - timedelta(days = 1))
@@ -23,7 +25,9 @@ for num in timedeltas:
 df = pd.DataFrame() 
 
 for time in range(len(timeframes)):
-    data = pd.read_csv(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{timeframes[time]}.csv')
+    url = f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{timeframes[time]}.csv'
+    r = requests.get(url) 
+    data = pd.read_csv(StringIO(r.text))
     data['Delta'] = timedeltas[time]
     df = df.append(data)
 
