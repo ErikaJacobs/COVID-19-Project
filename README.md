@@ -7,7 +7,8 @@ This project previously utilized PySpark via DataBricks to import COVID-19 daily
 * ETL
 
 Previous Data Flow Diagram:
-<img src="https://erikajacobs.netlify.app/post/covid-19-sparked-aws-ideas/featured.png" width="500">
+
+<img src="https://erikajacobs.netlify.app/post/covid-19-sparked-aws-ideas/featured.png" width="300">
 
 ## Technologies Used
 * Python
