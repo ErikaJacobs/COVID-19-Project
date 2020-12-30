@@ -182,7 +182,7 @@ def get_ydict_state_stats(n_clicks, value1, value2):
             ORDER BY Delta desc''')
         
         ydict_stats[f'{axis}'] = dict(zip(temp.Delta, temp.col))
-        
+
     return ydict_stats
 
 def get_ydict_state_plot(n_clicks, value1, value2):
@@ -428,7 +428,7 @@ def update_graph(n_clicks, value1, value2):
 
 def update_state_notes(n_clicks, value1, value2):
     
-    ydict_stats = get_ydict_state_stats(n_clicks, value1)
+    ydict_stats = get_ydict_state_stats(n_clicks, value1, value2)
     
     def aboveorbelow(day, week):
         if day > week:
