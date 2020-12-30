@@ -13,12 +13,13 @@ from io import StringIO
 # Testing if today's file is available
 now = (datetime.now())
 
-try:
-    url = f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{now.strftime("%m-%d-%Y")}.csv'
-    r = requests.get(url) 
-    data = pd.read_csv(StringIO(r.text))
-except:
+date = now.strftime("%m-%d-%Y")
+url = f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{date}.csv'
+r = requests.get(url) 
+if r.status_code != 200:
     now = (now - timedelta(days = 1))
+else:
+    pass
     
 # Make List of Time Frames
 timedeltas = (0, 1, 2, 3, 4, 5, 6, 7, 14, 21)
@@ -33,10 +34,14 @@ df = pd.DataFrame()
 
 for time in range(len(timeframes)):
     url = f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{timeframes[time]}.csv'
-    r = requests.get(url) 
+    r = requests.get(url)
+    if time == 0:
+        print(r)
     data = pd.read_csv(StringIO(r.text))
-    data['Delta'] = timedeltas[time]
+    print(timedeltas[time])
+    data['Delta'] = timedeltas[time] #Pandas doesn't consider 0 as a value
     df = df.append(data)
+    print(df['Delta'].unique())
 
 # Delete Extraneous Stuff
 del data
@@ -55,6 +60,8 @@ SUM(Recovered) as Recovered,
 SUM(Active) as Active
 FROM df
 GROUP BY Delta, Country_Region, Province_State''')
+
+
 
 #%%
 
@@ -142,13 +149,13 @@ def get_ydict_country_stats(n_clicks, value):
     for axis in y:
     
         temp = pysqldf(
-            f'''SELECT SUM({axis}) as col
+            f'''SELECT Delta, SUM({axis}) as col
             FROM df
             WHERE Country_Region = '{value}'
             GROUP BY Delta
             ORDER BY Delta asc''')
         
-        ydict_stats[f'{axis}'] = dict(zip(timedeltas, temp.col))
+        ydict_stats[f'{axis}'] = dict(zip(temp.Delta, temp.col))
         
     return ydict_stats
 
@@ -180,15 +187,14 @@ def get_ydict_state_stats(n_clicks, value1, value2):
     for axis in y:
     
         temp = pysqldf(
-            f'''SELECT SUM({axis}) as col
+            f'''SELECT Delta, SUM({axis}) as col
             FROM df
             WHERE Province_State = '{value1}'
             GROUP BY Delta
             ORDER BY Delta asc''')
         
-        ydict_stats[f'{axis}'] = dict(zip(timedeltas, temp.col))
+        ydict_stats[f'{axis}'] = dict(zip(temp.Delta, temp.col))
 
-    ydict_stats['Deaths'].keys()
     return ydict_stats
 
 def get_ydict_state_plot(n_clicks, value1, value2):
@@ -209,6 +215,9 @@ def get_ydict_state_plot(n_clicks, value1, value2):
         ydict_plot[f'{axis}'] = ydict_plot[f'{axis}'][-chart_days:]
         
     return ydict_plot
+
+
+    
 
 #%%
 
@@ -383,7 +392,7 @@ def update_worldwide_notes(n_clicks, value):
         {
             f"Insights - {value}":
                 [f"As of {x[-1]}, there were a total of {TOTAL1} cases of COVID-19 in this location. "
-                 f"This has increased by {pc[0]}% since last week, {pc[1]}% since two weeks ago, and "
+                 f"This has {INCRDECR1} by {pc[0]}% since last week, {pc[1]}% since two weeks ago, and "
                  f"{pc[2]}% since three weeks ago.",
                  f"{pc[5]}% of cases have died as of {x[-1]}. This has {INCRDECR2} since last week, "
                  f"in which {pc[6]}% of cases had died.",
