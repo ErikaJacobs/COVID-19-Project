@@ -11,10 +11,10 @@ from pandasql import sqldf
 # Testing if today's file is available
 now = (datetime.now())
 
-try:
-    df = pd.read_csv(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{now.strftime("%m-%d-%Y")}.csv')
-except:
-    now = (now - timedelta(days = 1))
+#try:
+    #df = pd.read_csv(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{now.strftime("%m-%d-%Y")}.csv')
+#except:
+now = (now - timedelta(days = 1))
     
 # Make List of Time Frames
 timedeltas = (0, 1, 2, 3, 4, 5, 6, 7, 14, 21)
