@@ -34,9 +34,9 @@ df = pd.DataFrame()
 for time in range(len(timeframes)):
     url = f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{timeframes[time]}.csv'
     r = requests.get(url) 
-    data = pd.read_csv(StringIO(r.text))
+    data = pd.read_csv(StringIO(r.text), sort = False)
     data['Delta'] = timedeltas[time]
-    df = df.append(data)
+    df = df.append(data, sort = False)
 
 # Delete Extraneous Stuff
 del data
