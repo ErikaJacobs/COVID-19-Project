@@ -187,7 +187,7 @@ def get_ydict_state_stats(n_clicks, value1, value2):
 
 def get_ydict_state_plot(n_clicks, value1, value2):
     ydict_plot = {}
-    
+
     y = ['Active', 'Deaths', 'Recovered', 'Confirmed']
     
     for axis in y:
@@ -455,7 +455,12 @@ def update_state_notes(n_clicks, value1, value2):
     PERCENT3 = round((TOTAL11 - TOTAL22) / TOTAL22 * 100, 1)
     INCRDECR1 = incrdecr(TOTAL11, TOTAL22)
 
-    AVERAGE = ydict_stats[f'{value2}'][-7:]
+    # Calculate Average
+    avg_list = []
+    for i in range(7):
+        avg_list.append(ydict_stats[f'{value2}'][i])
+        
+    AVERAGE = sum(avg_list)/len(avg_list)
     AVG = "{0:,d}".format(int(AVERAGE))
 
     dfstats = pd.DataFrame(
