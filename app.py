@@ -142,13 +142,13 @@ def get_ydict_country_stats(n_clicks, value):
     for axis in y:
     
         temp = pysqldf(
-            f'''SELECT Delta, SUM({axis}) as col
+            f'''SELECT SUM({axis}) as col
             FROM df
             WHERE Country_Region = '{value}'
             GROUP BY Delta
-            ORDER BY Delta desc''')
+            ORDER BY Delta asc''')
         
-        ydict_stats[f'{axis}'] = dict(zip(temp.Delta, temp.col))
+        ydict_stats[f'{axis}'] = dict(zip(timedeltas, temp.col))
         
     return ydict_stats
 
@@ -168,7 +168,8 @@ def get_ydict_country_plot(n_clicks, value):
         
         ydict_plot[f'{axis}'] = temp['col'].to_list()
         ydict_plot[f'{axis}'] = ydict_plot[f'{axis}'][-chart_days:]
-        
+     
+    ydict_plot['Deaths']
     return ydict_plot
     
 def get_ydict_state_stats(n_clicks, value1, value2):
@@ -179,14 +180,15 @@ def get_ydict_state_stats(n_clicks, value1, value2):
     for axis in y:
     
         temp = pysqldf(
-            f'''SELECT Delta, SUM({axis}) as col
+            f'''SELECT SUM({axis}) as col
             FROM df
             WHERE Province_State = '{value1}'
             GROUP BY Delta
-            ORDER BY Delta desc''')
+            ORDER BY Delta asc''')
         
-        ydict_stats[f'{axis}'] = dict(zip(temp.Delta, temp.col))
+        ydict_stats[f'{axis}'] = dict(zip(timedeltas, temp.col))
 
+    ydict_stats['Deaths'].keys()
     return ydict_stats
 
 def get_ydict_state_plot(n_clicks, value1, value2):
