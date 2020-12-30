@@ -7,15 +7,9 @@ import plotly.graph_objs as go
 import pandas as pd
 from datetime import datetime, timedelta
 from pandasql import sqldf
-import csv
 
-# Testing if today's file is available
-now = (datetime.now())
-
-#try:
-    #df = pd.read_csv(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{now.strftime("%m-%d-%Y")}.csv')
-#except:
-now = (now - timedelta(days = 1))
+# Setting "Now" To Yesterday
+now = (datetime.now() - timedelta(days = 1))
     
 # Make List of Time Frames
 timedeltas = (0, 1, 2, 3, 4, 5, 6, 7, 14, 21)
@@ -26,42 +20,30 @@ for num in timedeltas:
     timeframes.append(timeframe)
 
 # Loop to import files from Johns Hopkins CSSEGIS GitHub
-dfdict = {}
+df = pd.DataFrame() 
+
 for time in range(len(timeframes)):
-    data = csv.DictReader(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{timeframes[time]}.csv')
-    df = pd.DataFrame.from_dict(data)
-    df['Delta'] = timedeltas[time]
-    dfdict[f'df_{timedeltas[time]}'] = df
+    data = pd.read_csv(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{timeframes[time]}.csv')
+    data['Delta'] = timedeltas[time]
+    df = df.append(data)
 
+# Delete Extraneous Stuff
 del data
-del df
-
-#%%
+del timeframe
+del num
+del time
 
 # SQL Code for Aggregating Tables
 pysqldf = lambda q: sqldf(q, globals())
 
-for time in timedeltas:
-    df = dfdict[f'df_{time}']
-
-    dfdict[f'df_{time}'] = pysqldf(
-    '''SELECT Province_State, Country_Region, Delta,
-    SUM(Confirmed) as Confirmed, 
-    SUM(Deaths) as Deaths, 
-    SUM(Recovered) as Recovered, 
-    SUM(Active) as Active
-    FROM df
-    GROUP BY Delta, Country_Region, Province_State''')
-
-# Union Tables Together and Delete Dictionary
-df = dfdict['df_0']
-del dfdict['df_0']
-
-for time in timedeltas[1:]:
-    df = df.append(dfdict[f'df_{time}'])
-    del dfdict[f'df_{time}']
-    
-# Sort Final Table
+df = pysqldf(
+'''SELECT Province_State, Country_Region, Delta,
+SUM(Confirmed) as Confirmed, 
+SUM(Deaths) as Deaths, 
+SUM(Recovered) as Recovered, 
+SUM(Active) as Active
+FROM df
+GROUP BY Delta, Country_Region, Province_State''')
 
 #%%
 
