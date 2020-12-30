@@ -12,7 +12,7 @@ from pandasql import sqldf
 now = (datetime.now())
 
 try:
-    pd.read_csv(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{now.strftime("%m-%d-%Y")}.csv')
+    df = pd.read_csv(f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{now.strftime("%m-%d-%Y")}.csv')
 except:
     now = (now - timedelta(days = 1))
     
@@ -409,7 +409,10 @@ def update_graph(n_clicks, value1, value2):
     ydict_plot = get_ydict_state_plot(n_clicks, value1, value2)
     
     ## Build conditions for value2 (Active, Recovered, Etc.)
-    Graph4 = go.Scatter(x=x, y=ydict_plot[f'{value2}'], fill = 'tozeroy', name = 'New ({value2})')
+    Graph4 = go.Scatter(x=x, 
+                        y=ydict_plot[f'{value2}'], 
+                        fill = 'tozeroy', 
+                        name = 'New ({value2})')
     data = [Graph4]
     layout = dict(title = f"{value1} Cases: New vs Cumulative {value2} Cases",
                   font = dict(color='white'),
