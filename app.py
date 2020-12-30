@@ -22,7 +22,7 @@ else:
     pass
     
 # Make List of Time Frames
-timedeltas = (0, 1, 2, 3, 4, 5, 6, 7, 14, 21)
+timedeltas = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 21)
 timeframes = []
 
 for num in timedeltas:
@@ -62,7 +62,7 @@ GROUP BY Delta, Country_Region, Province_State''')
 #%%
 
 # Determine How Many Days in Chart
-chart_days = 8
+chart_days = 14
 
 # X VALUES
 # Getting Dates for X axis, and to say when file was last updated.
@@ -172,7 +172,6 @@ def get_ydict_country_plot(n_clicks, value):
         ydict_plot[f'{axis}'] = temp['col'].to_list()
         ydict_plot[f'{axis}'] = ydict_plot[f'{axis}'][-chart_days:]
      
-    ydict_plot['Deaths']
     return ydict_plot
     
 def get_ydict_state_stats(n_clicks, value1, value2):
