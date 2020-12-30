@@ -349,7 +349,7 @@ def update_fig(n_clicks, value):
                   barmode = 'stack',
                   paper_bgcolor = 'rgba(0,0,0,0)',
 				  plot_bgcolor = 'rgba(0,0,0,0)',
-                  colorway = ['#9a3033', '#d66c47', '#e0c553'],
+                  colorway = ['#9a3033', '#e0c553', '#d66c47'],
                   textfont = dict(color="White"),
                   colorscale = 'RdBu')
     fig = dict(data = data, layout = layout)
