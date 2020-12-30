@@ -17,7 +17,7 @@ date = now.strftime("%m-%d-%Y")
 url = f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{date}.csv'
 r = requests.get(url) 
 if r.status_code != 200:
-    now = (now - timedelta(days = 1))
+    now = (now - timedelta(days = 1, hours = 7))
 else:
     pass
     
@@ -35,13 +35,9 @@ df = pd.DataFrame()
 for time in range(len(timeframes)):
     url = f'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/{timeframes[time]}.csv'
     r = requests.get(url)
-    if time == 0:
-        print(r)
     data = pd.read_csv(StringIO(r.text))
-    print(timedeltas[time])
     data['Delta'] = timedeltas[time] #Pandas doesn't consider 0 as a value
     df = df.append(data)
-    print(df['Delta'].unique())
 
 # Delete Extraneous Stuff
 del data
