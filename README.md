@@ -24,7 +24,7 @@ Previous Data Flow Diagram:
 * S3FS
 * Dash
 
-# Featured Notebooks, Scripts, Analysis, or Deliverables
+# Featured Scripts or Deliverables
 * [```app.py```](app.py) - Dashboard Script
 * [Coronavirus Dashboard (Deployed)](https://covid-19-jacobs.herokuapp.com/)
 
