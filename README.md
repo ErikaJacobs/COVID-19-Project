@@ -24,6 +24,20 @@ Previous Data Flow Diagram:
 * S3FS
 * Dash
 
+## How To Run
+On the command line of your operating system, navigate to the repository directory (ideally using a Python virtual environment).
+
+Run the following code on the command line to install requirements:
+```
+pip install -r requirements.txt 
+```
+
+Run the following code on the command line to run this project:
+```
+Python app.py
+```
+The code's output should serve the application locally on http://127.0.0.1:8050/, which can be accessed from an internet browser.
+
 # Featured Scripts or Deliverables
 * [```app.py```](app.py) - Dashboard Script
 * [Coronavirus Dashboard (Deployed)](https://covid-19-jacobs.herokuapp.com/)
