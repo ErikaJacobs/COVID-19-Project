@@ -15,7 +15,7 @@ html5lib==1.1
 idna==2.10
 ipython-genutils==0.2.0
 itsdangerous==1.1.0
-Jinja2==2.11.2
+Jinja2==2.11.3
 jupyter-core==4.6.3
 MarkupSafe==1.1.1
 nbformat==5.0.8
